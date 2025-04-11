@@ -1,0 +1,9 @@
+mkdir bill_processor
+cd bill_processor
+python -m venv venv
+venv\Scripts\activate
+Download Tesseract
+https://github.com/UB-Mannheim/tesseract/
+# Run the main application
+python main.py
+run index.html
