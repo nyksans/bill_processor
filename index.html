@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Processing System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 3px;
+        }
+        .result pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            background: #f1f1f1;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background: #fff;
+            border-bottom: 1px solid #fff;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #ddd;
+            margin-top: -1px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bill Processing System</h1>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="upload">Upload Bill</div>
+        <div class="tab" data-tab="status">Check Status</div>
+        <div class="tab" data-tab="templates">Templates</div>
+    </div>
+    
+    <div id="upload" class="tab-content active">
+        <div class="container">
+            <h2>Upload a Bill for Processing</h2>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="billFile">Select Bill File (PDF, JPG, PNG):</label>
+                    <input type="file" id="billFile" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="templateSelect">Template (Optional):</label>
+                    <select id="templateSelect" name="template_id">
+                        <option value="">Auto-detect</option>
+                        <!-- Templates will be populated dynamically -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Notes (Optional):</label>
+                    <textarea id="notes" name="notes" rows="3"></textarea>
+                </div>
+                
+                <button type="submit">Process Bill</button>
+                <span id="uploadSpinner" class="spinner" style="display: none;"></span>
+            </form>
+            
+            <div id="uploadResult" class="result" style="display: none;">
+                <h3>Upload Result</h3>
+                <pre id="uploadResultContent"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <div id="status" class="tab-content">
+        <div class="container">
+            <h2>Check Bill Status</h2>
+            <div class="form-group">
+                <label for="billId">Bill ID:</label>
+                <input type="text" id="billId" placeholder="Enter Bill ID">
+            </div>
+            
+            <button id="checkStatusBtn">Check Status</button>
+            <span id="statusSpinner" class="spinner" style="display: none;"></span>
+            
+            <div id="statusResult" class="result" style="display: none;">
+                <h3>Bill Status</h3>
+                <div id="statusBasic"></div>
+                
+                <div id="extractedDataContainer" style="display: none;">
+                    <h4>Extracted Data</h4>
+                    <pre id="extractedData"></pre>
+                </div>
+                
+                <div id="mappedDataContainer" style="display: none;">
+                    <h4>Mapped to Template</h4>
+                    <div id="templateInfo"></div>
+                    <table id="mappedData">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Value</th>
+                                <th>Required</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                
+                <div id="validationContainer" style="display: none;">
+                    <h4>Validation</h4>
+                    <div id="validationResult"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="templates" class="tab-content">
+        <div class="container">
+            <h2>Templates Management</h2>
+            <div class="form-group">
+                <label for="templateList">Select Template:</label>
+                <select id="templateList">
+                    <option value="">-- Select Template --</option>
+                    <!-- Templates will be populated dynamically -->
+                </select>
+                <button id="newTemplateBtn" style="width: auto; margin-top: 10px;">New Template</button>
+            </div>
+            
+            <div id="templateEditor" style="display: none;">
+                <h3 id="templateEditorTitle">Edit Template</h3>
+                <form id="templateForm">
+                    <div class="form-group">
+                        <label for="templateId">Template ID:</label>
+                        <input type="text" id="templateId" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="templateName">Name:</label>
+                        <input type="text" id="templateName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="templateDescription">Description:</label>
+                        <textarea id="templateDescription" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Identification Keywords (comma-separated):</label>
+                        <input type="text" id="templateKeywords">
+                    </div>
+                    
+                    <h4>Fields</h4>
+                    <div id="templateFields"></div>
+                    
+                    <button type="button" id="addFieldBtn">Add Field</button>
+                    
+                    <div style="margin-top: 20px;">
+                        <button type="submit">Save Template</button>
+                        <button type="button" id="cancelTemplateBtn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div id="templateViewContainer" style="display: none;">
+                <h3>Template Details</h3>
+                <div id="templateView"></div>
+                <button id="editTemplateBtn" style="margin-top: 10px;">Edit Template</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Base API URL - update this to match your server
+        const API_URL = 'http://localhost:8000';
+        
+        // Utility functions
+        function formatJson(json) {
+            return JSON.stringify(json, null, 2);
+        }
+        
+        function showSpinner(id) {
+            document.getElementById(id).style.display = 'inline-block';
+        }
+        
+        function hideSpinner(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+        
+        // Tab navigation
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Hide all tabs and content
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Show selected tab and content
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+        
+        // Load templates for dropdown
+        async function loadTemplates() {
+            try {
+                const response = await fetch(`${API_URL}/templates/`);
+                const templates = await response.json();
+                
+                const templateSelect = document.getElementById('templateSelect');
+                const templateList = document.getElementById('templateList');
+                
+                // Clear existing options except the first one
+                while (templateSelect.options.length > 1) {
+                    templateSelect.remove(1);
+                }
+                
+                while (templateList.options.length > 1) {
+                    templateList.remove(1);
+                }
+                
+                // Add templates to dropdowns
+                for (const [id, template] of Object.entries(templates)) {
+                    // Add to upload form
+                    const option1 = document.createElement('option');
+                    option1.value = id;
+                    option1.textContent = template.name;
+                    templateSelect.appendChild(option1);
+                    
+                    // Add to template management
+                    const option2 = document.createElement('option');
+                    option2.value = id;
+                    option2.textContent = template.name;
+                    templateList.appendChild(option2);
+                }
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+        
+        // Upload bill form
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            const fileInput = document.getElementById('billFile');
+            const templateId = document.getElementById('templateSelect').value;
+            const notes = document.getElementById('notes').value;
+            
+            if (!fileInput.files.length) {
+                alert('Please select a file to upload');
+                return;
+            }
+            
+            formData.append('file', fileInput.files[0]);
+            
+            if (templateId) {
+                formData.append('template_id', templateId);
+            }
+            
+            if (notes) {
+                formData.append('notes', notes);
+            }
+            
+            try {
+                showSpinner('uploadSpinner');
+                
+                const response = await fetch(`${API_URL}/upload-bill/`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                const resultElem = document.getElementById('uploadResult');
+                const resultContent = document.getElementById('uploadResultContent');
+                
+                resultContent.textContent = formatJson(result);
+                resultElem.style.display = 'block';
+                
+                // Clear form
+                document.getElementById('uploadForm').reset();
+            } catch (error) {
+                console.error('Error uploading bill:', error);
+                alert('Error uploading bill. Please try again.');
+            } finally {
+                hideSpinner('uploadSpinner');
+            }
+        });
+        
+        // Check bill status
+        document.getElementById('checkStatusBtn').addEventListener('click', async () => {
+            const billId = document.getElementById('billId').value.trim();
+            
+            if (!billId) {
+                alert('Please enter a Bill ID');
+                return;
+            }
+            
+            try {
+                showSpinner('statusSpinner');
+                
+                const response = await fetch(`${API_URL}/bill/${billId}`);
+                const result = await response.json();
+                
+                const statusResult = document.getElementById('statusResult');
+                const statusBasic = document.getElementById('statusBasic');
+                const extractedDataContainer = document.getElementById('extractedDataContainer');
+                const extractedData = document.getElementById('extractedData');
+                const mappedDataContainer = document.getElementById('mappedDataContainer');
+                const templateInfo = document.getElementById('templateInfo');
+                const mappedData = document.getElementById('mappedData').querySelector('tbody');
+                const validationContainer = document.getElementById('validationContainer');
+                const validationResult = document.getElementById('validationResult');
+                
+                // Show basic status
+                statusBasic.innerHTML = `
+                    <p><strong>Status:</strong> ${result.status}</p>
+                    <p><strong>Bill ID:</strong> ${result.bill_id}</p>
+                    ${result.filename ? `<p><strong>Filename:</strong> ${result.filename}</p>` : ''}
+                    ${result.processed_date ? `<p><strong>Processed:</strong> ${result.processed_date}</p>` : ''}
+                `;
+                
+                // Show extracted data if available
+                if (result.extracted_data) {
+                    extractedData.textContent = formatJson(result.extracted_data);
+                    extractedDataContainer.style.display = 'block';
+                } else {
+                    extractedDataContainer.style.display = 'none';
+                }
+                
+                // Show mapped data if available
+                if (result.template_data && result.template_data.data) {
+                    templateInfo.innerHTML = `
+                        <p><strong>Template:</strong> ${result.template_data.template_name} (${result.template_id})</p>
+                    `;
+                    
+                    // Clear table
+                    mappedData.innerHTML = '';
+                    
+                    // Get template to check required fields
+                    let templateFields = {};
+                    try {
+                        const templateResponse = await fetch(`${API_URL}/template/${result.template_id}`);
+                        const template = await templateResponse.json();
+                        templateFields = template.fields || {};
+                    } catch (e) {
+                        console.error('Error loading template details:', e);
+                    }
+                    
+                    // Populate table
+                    for (const [field, value] of Object.entries(result.template_data.data)) {
+                        const row = document.createElement('tr');
+                        
+                        const fieldCell = document.createElement('td');
+                        fieldCell.textContent = field;
+                        
+                        const valueCell = document.createElement('td');
+                        valueCell.textContent = value !== null ? value : '(Not found)';
+                        
+                        const requiredCell = document.createElement('td');
+                        const isRequired = templateFields[field]?.required === true;
+                        requiredCell.textContent = isRequired ? 'Yes' : 'No';
+                        
+                        row.appendChild(fieldCell);
+                        row.appendChild(valueCell);
+                        row.appendChild(requiredCell);
+                        mappedData.appendChild(row);
+                    }
+                    
+                    mappedDataContainer.style.display = 'block';
+                } else {
+                    mappedDataContainer.style.display = 'none';
+                }
+                
+                // Show validation if available
+                if (result.validation) {
+                    let validationHTML = `<p><strong>Status:</strong> ${result.validation.status}</p>`;
+                    
+                    if (result.validation.missing_required && result.validation.missing_required.length > 0) {
+                        validationHTML += `
+                            <p><strong>Missing Required Fields:</strong></p>
+                            <ul>
+                                ${result.validation.missing_required.map(field => `<li>${field}</li>`).join('')}
+                            </ul>
+                        `;
+                    }
+                    
+                    validationResult.innerHTML = validationHTML;
+                    validationContainer.style.display = 'block';
+                } else {
+                    validationContainer.style.display = 'none';
+                }
+                
+                statusResult.style.display = 'block';
+            } catch (error) {
+                console.error('Error checking bill status:', error);
+                alert('Error checking bill status. Please try again.');
+            } finally {
+                hideSpinner('statusSpinner');
+            }
+        });
+        
+        // Template management
+        document.getElementById('templateList').addEventListener('change', async (e) => {
+            const templateId = e.target.value;
+            
+            if (!templateId) {
+                document.getElementById('templateViewContainer').style.display = 'none';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/template/${templateId}`);
+                const template = await response.json();
+                
+                const templateView = document.getElementById('templateView');
+                
+                let fieldsHTML = '<table><thead><tr><th>Field</th><th>Type</th><th>Required</th></tr></thead><tbody>';
+                
+                for (const [field, config] of Object.entries(template.fields)) {
+                    fieldsHTML += `
+                        <tr>
+                            <td>${field}</td>
+                            <td>${config.type || 'string'}</td>
+                            <td>${config.required ? 'Yes' : 'No'}</td>
+                        </tr>
+                    `;
+                }
+                
+                fieldsHTML += '</tbody></table>';
+                
+                templateView.innerHTML = `
+                    <p><strong>ID:</strong> ${templateId}</p>
+                    <p><strong>Name:</strong> ${template.name}</p>
+                    <p><strong>Description:</strong> ${template.description || '(No description)'}</p>
+                    <p><strong>Keywords:</strong> ${template.identification?.keywords?.join(', ') || '(None)'}</p>
+                    <h4>Fields</h4>
+                    ${fieldsHTML}
+                `;
+                
+                document.getElementById('templateViewContainer').style.display = 'block';
+                document.getElementById('templateEditor').style.display = 'none';
+            } catch (error) {
+                console.error('Error loading template:', error);
+                alert('Error loading template details. Please try again.');
+            }
+        });
+        
+        // Edit template button
+        document.getElementById('editTemplateBtn').addEventListener('click', async () => {
+            const templateId = document.getElementById('templateList').value;
+            
+            if (!templateId) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/template/${templateId}`);
+                const template = await response.json();
+                
+                // Populate form
+                document.getElementById('templateId').value = templateId;
+                document.getElementById('templateId').disabled = true; // Don't change ID for existing template
+                document.getElementById('templateName').value = template.name;
+                document.getElementById('templateDescription').value = template.description || '';
+                document.getElementById('templateKeywords').value = template.identification?.keywords?.join(', ') || '';
+                
+                // Clear and populate fields
+                const fieldsContainer = document.getElementById('templateFields');
+                fieldsContainer.innerHTML = '';
+                
+                for (const [field, config] of Object.entries(template.fields)) {
+                    addFieldToForm(field, config.type || 'string', config.required || false);
+                }
+                
+                document.getElementById('templateEditorTitle').textContent = 'Edit Template';
+                document.getElementById('templateViewContainer').style.display = 'none';
+                document.getElementById('templateEditor').style.display = 'block';
+            } catch (error) {
+                console.error('Error editing template:', error);
+                alert('Error loading template for editing. Please try again.');
+            }
+        });
+        
+        // New template button
+        document.getElementById('newTemplateBtn').addEventListener('click', () => {
+            // Clear form
+            document.getElementById('templateId').value = '';
+            document.getElementById('templateId').disabled = false;
+            document.getElementById('templateName').value = '';
+            document.getElementById('templateDescription').value = '';
+            document.getElementById('templateKeywords').value = '';
+            document.getElementById('templateFields').innerHTML = '';
+            
+            // Add some default fields
+            addFieldToForm('vendor_name', 'string', true);
+            addFieldToForm('invoice_number', 'string', true);
+            addFieldToForm('date', 'date', true);
+            addFieldToForm('total_amount', 'number', true);
+            
+            document.getElementById('templateEditorTitle').textContent = 'Create New Template';
+            document.getElementById('templateViewContainer').style.display = 'none';
+            document.getElementById('templateEditor').style.display = 'block';
+        });
+        
+        // Cancel template button
+        document.getElementById('cancelTemplateBtn').addEventListener('click', () => {
+            document.getElementById('templateEditor').style.display = 'none';
+            
+            // Show template view if a template is selected
+            const templateId = document.getElementById('templateList').value;
+            if (templateId) {
+                document.getElementById('templateViewContainer').style.display = 'block';
+            }
+        });
+        
+        // Add field button
+        document.getElementById('addFieldBtn').addEventListener('click', () => {
+            addFieldToForm('', 'string', false);
+        });
+        
+        // Helper function to add a field to the template form
+        function addFieldToForm(name = '', type = 'string', required = false) {
+            const fieldsContainer = document.getElementById('templateFields');
+            const fieldId = 'field_' + Date.now();
+            
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'form-group';
+            fieldDiv.style.display = 'flex';
+            fieldDiv.style.alignItems = 'center';
+            fieldDiv.style.gap = '10px';
+            fieldDiv.style.marginBottom = '10px';
+            fieldDiv.innerHTML = `
+                <input type="text" placeholder="Field name" value="${name}" style="flex: 2;">
+                <select style="flex: 1;">
+                    <option value="string" ${type === 'string' ? 'selected' : ''}>String</option>
+                    <option value="number" ${type === 'number' ? 'selected' : ''}>Number</option>
+                    <option value="date" ${type === 'date' ? 'selected' : ''}>Date</option>
+                    <option value="array" ${type === 'array' ? 'selected' : ''}>Array</option>
+                </select>
+                <label style="flex: 1;">
+                    <input type="checkbox" ${required ? 'checked' : ''}>
+                    Required
+                </label>
+                <button type="button" class="remove-btn" style="flex: 0; width: auto;">×</button>
+            `;
+            
+            // Add remove button functionality
+            fieldDiv.querySelector('.remove-btn').addEventListener('click', () => {
+                fieldsContainer.removeChild(fieldDiv);
+            });
+            
+            fieldsContainer.appendChild(fieldDiv);
+        }
+        
+        // Save template form
+        document.getElementById('templateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const templateId = document.getElementById('templateId').value.trim();
+            const name = document.getElementById('templateName').value.trim();
+            const description = document.getElementById('templateDescription').value.trim();
+            const keywords = document.getElementById('templateKeywords').value.trim()
+                                .split(',')
+                                .map(k => k.trim())
+                                .filter(k => k.length > 0);
+            
+            if (!templateId || !name) {
+                alert('Template ID and Name are required');
+                return;
+            }
+            
+            // Collect fields
+            const fields = {};
+            const fieldDivs = document.getElementById('templateFields').querySelectorAll('.form-group');
+            
+            for (const div of fieldDivs) {
+                const inputs = div.querySelectorAll('input, select');
+                const fieldName = inputs[0].value.trim();
+                const fieldType = inputs[1].value;
+                const fieldRequired = inputs[2].checked;
+                
+                if (fieldName) {
+                    fields[fieldName] = {
+                        type: fieldType,
+                        required: fieldRequired
+                    };
+                }
+            }
+            
+            // Build template object
+            const template = {
+                name: name,
+                description: description,
+                fields: fields,
+                identification: {
+                    keywords: keywords
+                }
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/template/${templateId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(template)
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    alert('Template saved successfully');
+                    
+                    // Reload templates
+                    await loadTemplates();
+                    
+                    // Reset form and go back to template list
+                    document.getElementById('templateEditor').style.display = 'none';
+                    document.getElementById('templateList').value = templateId;
+                    
+                    // Trigger change event to load template details
+                    const event = new Event('change');
+                    document.getElementById('templateList').dispatchEvent(event);
+                } else {
+                    alert('Error saving template: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error saving template:', error);
+                alert('Error saving template. Please try again.');
+            }
+        });
+        
+        // Load templates on page load
+        window.addEventListener('DOMContentLoaded', loadTemplates);
+    </script>
+</body>
+</html>

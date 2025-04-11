@@ -1,0 +1,41 @@
+{
+  "name": "Generic Bill",
+  "description": "Standard template for most bills",
+  "fields": {
+    "vendor_name": {
+      "required": true,
+      "type": "string"
+    },
+    "invoice_number": {
+      "required": true,
+      "type": "string"
+    },
+    "date": {
+      "required": true,
+      "type": "date"
+    },
+    "due_date": {
+      "required": false,
+      "type": "date"
+    },
+    "total_amount": {
+      "required": true,
+      "type": "number"
+    },
+    "line_items": {
+      "required": false,
+      "type": "array"
+    },
+    "tax_amount": {
+      "required": false,
+      "type": "number"
+    },
+    "notes": {
+      "required": false,
+      "type": "string"
+    }
+  },
+  "identification": {
+    "keywords": []
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "name": "Utility Bill",
+  "description": "For electricity, water, gas bills",
+  "fields": {
+    "vendor_name": {
+      "required": true,
+      "type": "string"
+    },
+    "invoice_number": {
+      "required": true,
+      "type": "string"
+    },
+    "account_number": {
+      "required": true,
+      "type": "string"
+    },
+    "service_address": {
+      "required": true,
+      "type": "string"
+    },
+    "service_period": {
+      "required": true,
+      "type": "string"
+    },
+    "current_reading": {
+      "required": false,
+      "type": "number"
+    },
+    "previous_reading": {
+      "required": false,
+      "type": "number"
+    },
+    "usage": {
+      "required": false,
+      "type": "number"
+    },
+    "rate": {
+      "required": false,
+      "type": "number"
+    },
+    "date": {
+      "required": true,
+      "type": "date"
+    },
+    "due_date": {
+      "required": true,
+      "type": "date"
+    },
+    "total_amount": {
+      "required": true,
+      "type": "number"
+    }
+  },
+  "identification": {
+    "keywords": [
+      "utility",
+      "electric",
+      "electricity",
+      "water",
+      "gas",
+      "service",
+      "meter"
+    ]
+  }
+}
